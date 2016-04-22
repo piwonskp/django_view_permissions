@@ -1,7 +1,7 @@
 {% extends 'admin/change_form.html' %}
 
 {% block extrastyle %}
-    {% if not is_savable %}
+    {% if is_unsavable %}
         <style>
             .save-box{
                 display: none !important;
@@ -11,7 +11,7 @@
 {% endblock %}
 
 {% block submit_buttons_bottom %}
-    {% if is_savable %}
+    {% if not is_unsavable %}
         {{ block.super }}
     {% endif %}
 {% endblock %}

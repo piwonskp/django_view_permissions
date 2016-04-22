@@ -57,7 +57,7 @@ class ReadonlyModeMixin(object):
 
     def render_change_form(self, request, context, add=False, change=False, form_url='', obj=None):
         if change and self.is_unsavable(request, obj, context):
-            extra_context = {'is_savable': False,
+            extra_context = {'is_unsavable': True,
                              'is_readonly': self.is_readonly(request, obj)
                              }
 
