@@ -44,15 +44,13 @@ class ReadonlyModeMixin(object):
         if declared_fieldsets:
             return flatten_fieldsets(declared_fieldsets)
         else:
-            all_fields = list(set(
-                [field.name for field in self.opts.local_fields] +
-                [field.name for field in self.opts.local_many_to_many]
-            ))
-            readonly_fields = []
-            exclude = self.exclude if self.exclude else []
-            for field_name in all_fields:
-                if field_name not in exclude and field_name != 'id':
-                    readonly_fields.append(field_name)
+            all_fields = self.model._meta.get_fields()
+            exclude = self.exclude or []
+
+            readonly_fields = [f.name for f in all_fields
+                               if not f.auto_created and
+                               f.name not in exclude
+                               ]
             return readonly_fields
 
     def render_change_form(self, request, context, add=False, change=False, form_url='', obj=None):
