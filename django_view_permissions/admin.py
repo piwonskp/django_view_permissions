@@ -25,7 +25,8 @@ class ReadonlyModeMixin(object):
         return self.is_readonly(request, obj)
 
     def get_fields(self, request, obj=None, call_super=True):
-        fields = []
+        fields = self.fields
+
         if call_super:
             fields = super(ReadonlyModeMixin, self).get_fields(request, obj)
         return fields
@@ -35,10 +36,11 @@ class ReadonlyModeMixin(object):
             return super(ReadonlyModeMixin, self).get_readonly_fields(request, obj)
 
         declared_fieldsets = None
+        fields = self.get_fields(request, obj, call_super=False)
+
         if self.fieldsets:
             declared_fieldsets = self.fieldsets
-        elif self.fields:
-            fields = list(self.fields) + list(self.get_fields(request, obj, call_super=False))
+        elif fields:
             declared_fieldsets = [(None, {'fields': fields})]
 
         if declared_fieldsets:
@@ -68,7 +70,7 @@ class ReadonlyModeMixin(object):
         return super(ReadonlyModeMixin, self).render_change_form(request, context, add, change, form_url, obj)
 
     def save_model(self, request, obj, form, change):
-        if change or not self.is_unsavable(request, obj):
+        if not change or not self.is_unsavable(request, obj):
             super(ReadonlyModeMixin, self).save_model(request, obj, form, change)
 
 
