@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.admin.utils import flatten_fieldsets
+from django.forms import fields_for_model
 
 
 class ReadonlyModeMixin(object):
@@ -18,42 +19,46 @@ class ReadonlyModeMixin(object):
 
     def is_unsavable(self, request, obj, context=None):
         """
-        If you want to customize saving you can do it here
+        If you want to customize saving you can do it here.
+
+        :param context: determines whether method was called by save_model or render_change_form.
+                        When method is called by save_model context is None.
         :return: True - disable saving, hide save buttons
                  False - enable saving, show save buttons
         """
         return self.is_readonly(request, obj)
 
-    def get_fields(self, request, obj=None, call_super=True):
-        fields = self.fields
+    def _changeable_fields(self, request, obj):
+        """ When result is True get_fields and get_readonly_fields simply returns super
+        """
+        return not obj or not self.is_readonly(request, obj)
 
-        if call_super:
-            fields = super(ReadonlyModeMixin, self).get_fields(request, obj)
+    def get_fields(self, request, obj=None):
+        if self._changeable_fields(request, obj):
+            return super(ReadonlyModeMixin, self).get_fields(request, obj)
+
+        if self.fields is not None:
+            return self.fields
+
+        fields = None
+        if hasattr(self.form, '_meta'):
+            fields = getattr(self.form.Meta, 'fields', None)
+
+        exclude = self.exclude
+        if exclude is None and hasattr(self.form, '_meta'):
+            exclude = getattr(self.form.Meta, 'exclude', None)
+
+        fields = fields_for_model(self.model, fields, exclude)
+
         return fields
 
     def get_readonly_fields(self, request, obj=None):
-        if not obj or not self.is_readonly(request, obj):
+        if self._changeable_fields(request, obj):
             return super(ReadonlyModeMixin, self).get_readonly_fields(request, obj)
 
-        declared_fieldsets = None
-        fields = self.get_fields(request, obj, call_super=False)
+        readonly_fields = flatten_fieldsets(self.get_fieldsets(request, obj))
 
-        if self.fieldsets:
-            declared_fieldsets = self.fieldsets
-        elif fields:
-            declared_fieldsets = [(None, {'fields': fields})]
-
-        if declared_fieldsets:
-            return flatten_fieldsets(declared_fieldsets)
-        else:
-            all_fields = self.model._meta.get_fields()
-            exclude = self.exclude or []
-
-            readonly_fields = [f.name for f in all_fields
-                               if not f.auto_created and
-                               f.name not in exclude
-                               ]
-            return readonly_fields
+        return readonly_fields
 
     def render_change_form(self, request, context, add=False, change=False, form_url='', obj=None):
         if change and self.is_unsavable(request, obj, context):
