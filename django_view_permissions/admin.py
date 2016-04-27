@@ -42,11 +42,11 @@ class ReadonlyModeMixin(object):
 
         fields = None
         if hasattr(self.form, '_meta'):
-            fields = getattr(self.form.Meta, 'fields', None)
+            fields = getattr(self.form._meta, 'fields', None)
 
         exclude = self.exclude
         if exclude is None and hasattr(self.form, '_meta'):
-            exclude = getattr(self.form.Meta, 'exclude', None)
+            exclude = getattr(self.form._meta, 'exclude', None)
 
         fields = fields_for_model(self.model, fields, exclude)
 
