@@ -17,16 +17,15 @@ class ReadonlyModeMixin(object):
         """
         return False
 
-    def is_unsavable(self, request, obj, context=None):
+    def is_savable(self, request, obj):
         """
         If you want to customize saving you can do it here.
-
-        :param context: determines whether method was called by save_model or render_change_form.
-                        When method is called by save_model context is None.
-        :return: True - disable saving, hide save buttons
-                 False - enable saving, show save buttons
         """
-        return self.is_readonly(request, obj)
+        return not self.is_readonly(request, obj)
+
+    def hide_save_buttons(self, request, obj, context):
+        """ Customize hiding save buttons """
+        return not self.is_savable(request, obj)
 
     def _changeable_fields(self, request, obj):
         """ When result is True get_fields and get_readonly_fields simply returns super
@@ -61,8 +60,8 @@ class ReadonlyModeMixin(object):
         return readonly_fields
 
     def render_change_form(self, request, context, add=False, change=False, form_url='', obj=None):
-        if change and self.is_unsavable(request, obj, context):
-            extra_context = {'is_unsavable': True,
+        if change and self.hide_save_buttons(request, obj, context):
+            extra_context = {'hide_save_buttons': True,
                              'is_readonly': self.is_readonly(request, obj)
                              }
 
@@ -75,7 +74,7 @@ class ReadonlyModeMixin(object):
         return super(ReadonlyModeMixin, self).render_change_form(request, context, add, change, form_url, obj)
 
     def save_model(self, request, obj, form, change):
-        if not change or not self.is_unsavable(request, obj):
+        if not change or self.is_savable(request, obj):
             super(ReadonlyModeMixin, self).save_model(request, obj, form, change)
 
 
